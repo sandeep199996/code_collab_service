@@ -14,22 +14,22 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
 
-    // 1. We create the BCrypt tool and put it in Spring's toolbox
+    
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
     @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter; // Inject our new filter!
-    // 2. We configure the Security Bouncer
+    private JwtAuthenticationFilter jwtAuthenticationFilter; 
+    
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Disable CSRF since we are building a stateless REST API
-                .cors(cors -> cors.configure(http)) // Hook into our previous CorsConfig rules
+                .csrf(csrf -> csrf.disable()) 
+                .cors(cors -> cors.configure(http)) 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/users/register","/api/users/login").permitAll() // Anyone can register!
-                        .anyRequest().authenticated() // Every other endpoint requires a login
+                        .anyRequest().authenticated() 
                 )
                         .addFilterBefore(jwtAuthenticationFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
