@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) 
                 .cors(cors -> cors.configure(http)) 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users/register","/api/users/login").permitAll() // Anyone can register!
+                        .requestMatchers("/api/users/register","/api/users/login" ,"/ws/**").permitAll() // Anyone can register!
                         .anyRequest().authenticated() 
                 )
                         .addFilterBefore(jwtAuthenticationFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
