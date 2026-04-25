@@ -26,4 +26,12 @@ public class ChatController {
         // We could do extra logic here like saving the user to a "currently online" database table!
         return chatMessage;
     }
-}
+    @MessageMapping("/code.sendChange") // MUST be @MessageMapping
+    @SendTo("/topic/code")
+    public ChatMessage sendCodeChange(@Payload ChatMessage chatMessage) {
+        return chatMessage;
+    }
+
+        }
+
+

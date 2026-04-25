@@ -10,7 +10,9 @@ public class ChatMessage {
 
     public enum MessageType {
         CHAT,   // A normal message
-        JOIN,   // Someone entered the room
-        LEAVE   // Someone left the room
+        JOIN, // Someone entered the room
+        CODE, // A code change message
+        LEAVE// Someone left the room
+
     }
 }
