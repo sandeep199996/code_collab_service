@@ -31,7 +31,10 @@ public class ChatController {
     public ChatMessage sendCodeChange(@Payload ChatMessage chatMessage) {
         return chatMessage;
     }
-
-        }
+@MessageMapping("/video.signal")
+@SendTo("/topic/video")
+public ChatMessage handleVideoSignal(@Payload ChatMessage signal) {
+        return signal;}
+}
 
 

@@ -12,7 +12,8 @@ public class ChatMessage {
         CHAT,   // A normal message
         JOIN, // Someone entered the room
         CODE, // A code change message
-        LEAVE// Someone left the room
-
+        LEAVE,// Someone left the room
+VIDEO_OFFER,
+VIDEO_ANSWER,
     }
 }
