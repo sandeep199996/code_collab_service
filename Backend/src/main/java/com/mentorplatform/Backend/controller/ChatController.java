@@ -3,13 +3,22 @@ package com.mentorplatform.Backend.controller;
 
 
 import com.mentorplatform.Backend.dto.ChatMessage;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+
 
 @Controller
 public class ChatController {
+
+
+    @Autowired
+     private SimpMessagingTemplate messagingTemplate;
 
     // 1. A user sends a message to /app/chat.sendMessage
     @MessageMapping("/chat.sendMessage")
@@ -35,6 +44,14 @@ public class ChatController {
 @SendTo("/topic/video")
 public ChatMessage handleVideoSignal(@Payload ChatMessage signal) {
         return signal;}
+
+    @MessageMapping("/chat.sendPrivate/{roomId}")
+    public void sendPrivateMessage(@DestinationVariable String roomId, @Payload ChatMessage chatMessage) {
+        System.out.println("Routing private message to room: " + roomId);
+
+        // This broadcasts the message ONLY to the two people subscribed to this specific room string
+        messagingTemplate.convertAndSend("/topic/session/" + roomId, chatMessage);
+    }
 }
 
 
