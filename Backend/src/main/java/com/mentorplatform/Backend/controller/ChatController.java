@@ -49,8 +49,21 @@ public ChatMessage handleVideoSignal(@Payload ChatMessage signal) {
     public void sendPrivateMessage(@DestinationVariable String roomId, @Payload ChatMessage chatMessage) {
         System.out.println("Routing private message to room: " + roomId);
 
-        // This broadcasts the message ONLY to the two people subscribed to this specific room string
+        // TO broadcast the message ONLY to the two people subscribed to this specific room string
         messagingTemplate.convertAndSend("/topic/session/" + roomId, chatMessage);
+    }
+    // Route for Private Code Collaboration
+    @MessageMapping("/code.sendPrivate/{roomId}")
+    public void sendPrivateCode(@DestinationVariable String roomId, @Payload ChatMessage message) {
+        //  appended "/code" to the room so chat and code don't get mixed up in the frontend!
+        messagingTemplate.convertAndSend("/topic/session/" + roomId + "/code", message);
+    }
+
+    // Route for Private WebRTC Signaling
+    @MessageMapping("/video.sendPrivate/{roomId}")
+    public void sendPrivateVideo(@DestinationVariable String roomId, @Payload ChatMessage message) {
+        //  appended "/video" to keep the signaling channel clean
+        messagingTemplate.convertAndSend("/topic/session/" + roomId + "/video", message);
     }
 }
 
