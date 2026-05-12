@@ -1,65 +1,106 @@
 package com.mentorplatform.Backend.controller;
 
-import org.springframework.http.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.List;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/compiler")
 public class CompilerController {
 
     @PostMapping("/run")
-    public ResponseEntity<?> runCodeProxy(@RequestBody Map<String, Object> request) {
-        String code = (String) request.get("code");
-        String language = (String) request.get("language");
-
-        String version = "15.0.2";
-        if ("python".equals(language)) version = "3.10.0";
-        if ("javascript".equals(language)) version = "18.15.0";
-
-        // 1. Let Spring Boot handle the JSON formatting!
-        Map<String, Object> pistonPayload = new HashMap<>();
-        pistonPayload.put("language", language);
-        pistonPayload.put("version", version);
-
-        // Piston expects an array of files
-        Map<String, String> fileMap = new HashMap<>();
-        fileMap.put("content", code);
-        pistonPayload.put("files", List.of(fileMap));
+    public ResponseEntity<?> runDockerCode(@RequestBody Map<String, String> request) {
+        String code = request.get("code");
+        String language = request.getOrDefault("language", "java");
+        Path tempDir = null; // Declare up here so we can clean it up in the 'finally' block
 
         try {
-            RestTemplate restTemplate = new RestTemplate();
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+            tempDir = Files.createTempDirectory("docker-sandbox");
+            Path sourceFile;
+            ProcessBuilder pb;
+            String hostPath = tempDir.toAbsolutePath().toString();
 
-            // We pass the Map directly. Spring automatically safely converts it to JSON.
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(pistonPayload, headers);
+            switch (language.toLowerCase()) {
+                case "javascript":
+                    sourceFile = tempDir.resolve("script.js");
+                    Files.writeString(sourceFile, code);
+                    pb = new ProcessBuilder(
+                            "docker", "run", "--rm",
+                            "--memory=128m", "--cpus=0.5", "--network=none",
+                            "-v", hostPath + ":/app", "-w", "/app",
+                            "node:18-alpine", "node", "script.js"
+                    );
+                    break;
+                case "python":
+                    sourceFile = tempDir.resolve("script.py");
+                    Files.writeString(sourceFile, code);
+                    pb = new ProcessBuilder(
+                            "docker", "run", "--rm",
+                            "--memory=128m", "--cpus=0.5", "--network=none",
+                            "-v", hostPath + ":/app", "-w", "/app",
+                            "python:3.10-alpine", "python", "script.py"
+                    );
+                    break;
+                case "java":
+                default:
+                    sourceFile = tempDir.resolve("Main.java");
+                    Files.writeString(sourceFile, code);
+                    pb = new ProcessBuilder(
+                            "docker", "run", "--rm",
+                            "--memory=128m", "--cpus=0.5", "--network=none",
+                            "-v", hostPath + ":/app", "-w", "/app",
+                            "eclipse-temurin:17-alpine", "sh", "-c", "javac Main.java && java Main"
+                    );
+                    break;
+            }
 
-            ResponseEntity<Map> response = restTemplate.postForEntity(
-                    "https://emkc.org/api/v2/piston/execute",
-                    entity,
-                    Map.class
-            );
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
 
-            Map<String, Object> runData = (Map<String, Object>) response.getBody().get("run");
-            String output = (String) runData.get("output");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
 
-            return ResponseEntity.ok(Map.of("output", output));
+            boolean finished = process.waitFor(20, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroy();
+                return ResponseEntity.ok(Map.of("output", "Timeout Error: Code execution exceeded 20 seconds. Check for infinite loops!"));
+            }
 
-        } catch (HttpClientErrorException e) {
-            // This catches 400 Bad Request or 401 Unauthorized from Piston
-            System.err.println("Piston API Error: " + e.getResponseBodyAsString());
-            return ResponseEntity.ok(Map.of("output", "API Error: " + e.getStatusCode()));
+            return ResponseEntity.ok(Map.of("output", output.toString()));
+
         } catch (Exception e) {
-            // This catches total network failures
-            System.err.println("Total Execution Failure: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.ok(Map.of("output", "Execution Server Error: Check your Spring Boot console."));
+            return ResponseEntity.ok(Map.of("output", "Backend Orchestration Error: " + e.getMessage()));
+        } finally {
+            // ALWAYS run this, even if the code crashes halfway through!
+            if (tempDir != null) {
+                cleanUpSandbox(tempDir);
+            }
+        }
+    }
+
+    // --- NEW: Aggressive Cleanup Helper ---
+    private void cleanUpSandbox(Path tempDir) {
+        File dir = tempDir.toFile();
+        if (dir.exists() && dir.isDirectory()) {
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    file.delete(); // This safely deletes Main.java AND Main.class!
+                }
+            }
+            dir.delete(); // Now the empty folder can be safely deleted
         }
     }
 }
