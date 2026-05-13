@@ -29,7 +29,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configure(http)) 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/users/register","/api/users/login","/api/compiler/**" ,"/ws/**").permitAll() // Anyone can register!
-                        .anyRequest().authenticated() 
+                        //.requestMatchers("/api/admin/**").hasRole("ADMIN") // Only Admins can access admin endpoints
+                        .anyRequest().authenticated()
+
                 )
                         .addFilterBefore(jwtAuthenticationFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
