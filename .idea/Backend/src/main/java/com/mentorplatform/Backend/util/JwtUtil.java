@@ -16,13 +16,10 @@ public class JwtUtil {
 
     private final SecretKey key = Keys.hmacShaKeyFor(SECRET_STRING.getBytes());
 
-
     // Generate the VIP Pass
-    public String generateToken(String email, String role) {
-
+    public String generateToken(String email) {
         return Jwts.builder()
                 .subject(email) // Who does this pass belong to?
-                .claim("role", role)
                 .issuedAt(new Date(System.currentTimeMillis())) // When was it created?
                 .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // Expires in 10 hours
                 .signWith(key) // Sign it with our un-forgeable secret key

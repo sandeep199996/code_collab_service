@@ -11,12 +11,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+
+import javax.management.relation.Relation;
 
 @RestController
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"})
     @RequestMapping("/api/users")
     public class UserController {
 @Autowired
     private UserService userService;
+
     @PostMapping("/register")
     public User registerUser(@RequestBody User user) {
         // Registration logic will go here
@@ -26,9 +31,12 @@ import org.springframework.http.ResponseEntity;
     private PasswordEncoder passwordEncoder; // We need this to check the hash
 
     @Autowired
-    private JwtUtil jwtUtil; // We need this to make the VIP pass
+    private JwtUtil jwtUtil; // We need this to make the VIP pass (JWT) after successful login
 
+    @Autowired
+    private UserRepository userRepository; // We need this to fetch the user's role for the JWT
     // POST API for Logging In
+
     @PostMapping("/login")
     public String loginUser(@RequestBody User loginRequest) {
         // 1. Find the user in the database
@@ -43,11 +51,14 @@ import org.springframework.http.ResponseEntity;
         }
 
         // 3. If everything is correct, generate and return the VIP pass (JWT)
-        return jwtUtil.generateToken(existingUser.getEmail());
+        // Pass the role we fetched from the database directly into the token generator!
+
+        // THE FIX: Use 'existingUser' instead of 'user'
+        String token = jwtUtil.generateToken(existingUser.getEmail(), existingUser.getRole().name());
+
+        return token;
     }
 
-    @Autowired
-    private UserRepository userRepository;
 
     @GetMapping("/directory")
     public ResponseEntity<Page<User>> getPaginatedDirectory(
@@ -64,15 +75,16 @@ import org.springframework.http.ResponseEntity;
             if (search == null || search.trim().isEmpty()) {
                 userPage = userRepository.findAll(paging);
             } else {
-                // If they are searching, check names, emails, and roles for matches
-                userPage = userRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrRoleContainingIgnoreCase(
-                        search, search, search, paging
-                );
+                //  Calling custom query!
+                userPage = userRepository.searchUsers(search, paging);
             }
 
             return ResponseEntity.ok(userPage);
 
         } catch (Exception e) {
+            // Print the exact error to the backend console so we don't fly blind!
+            System.err.println("Search crash: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }

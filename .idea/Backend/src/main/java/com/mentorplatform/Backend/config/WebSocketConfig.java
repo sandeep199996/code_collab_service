@@ -15,7 +15,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // This is the URL our React frontend will use to establish the initial connection
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:5173","http://localhost:5174") // Allow our Vite React app
+                .setAllowedOrigins("http://localhost:5173") // Allow our Vite React app
                 .withSockJS(); // A fallback mechanism if a browser doesn't support raw WebSockets
     }
 
