@@ -1,6 +1,7 @@
 package com.mentorplatform.Backend.controller;
 
 
+import com.mentorplatform.Backend.service.PlatformMetricsService;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -18,12 +19,15 @@ public class PresenceController {
 
     private final SimpMessagingTemplate messagingTemplate;
 
+    private final PlatformMetricsService metricsService;
+
     // Server Memory: Keeps track of Network Sessions and User Statuses
     private final Map<String, String> activeSessions = new ConcurrentHashMap<>(); // SessionID -> Email
     private final Map<String, String> userStatuses = new ConcurrentHashMap<>();   // Email -> Status
 
-    public PresenceController(SimpMessagingTemplate messagingTemplate) {
+    public PresenceController(SimpMessagingTemplate messagingTemplate, PlatformMetricsService metricsService) {
         this.messagingTemplate = messagingTemplate;
+        this.metricsService = metricsService;
     }
 
     // 1. When a React frontend connects, it shouts "I am here!"
@@ -35,7 +39,7 @@ public class PresenceController {
 
         // Turn their LED green
         userStatuses.put(email, "ONLINE");
-
+        metricsService.updateUserStatus(email, "ONLINE");
         // Broadcast the entire map of all users' statuses to everyone's directory
         messagingTemplate.convertAndSend("/topic/presence", userStatuses);
     }
@@ -51,6 +55,7 @@ public class PresenceController {
         if (email != null) {
             // Turn their LED red and broadcast the update
             userStatuses.put(email, "OFFLINE");
+            metricsService.updateUserStatus(email, "OFFLINE");
             messagingTemplate.convertAndSend("/topic/presence", userStatuses);
 
             System.out.println("Presence Radar: " + email + " disconnected.");
@@ -64,8 +69,10 @@ public class PresenceController {
 
         if(activeSessions.containsValue(email)) {
             userStatuses.put(email, status);
+            metricsService.updateUserStatus(email, status);
             messagingTemplate.convertAndSend("/topic/presence", userStatuses);
         }
     }
+
 
 }

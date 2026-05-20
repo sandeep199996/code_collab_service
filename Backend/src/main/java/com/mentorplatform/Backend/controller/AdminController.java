@@ -1,6 +1,6 @@
 package com.mentorplatform.Backend.controller;
 
-
+import com.mentorplatform.Backend.service.PlatformMetricsService;
 import com.mentorplatform.Backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,14 +11,14 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"})
 public class AdminController {
 
     @Autowired
     private UserRepository userRepository;
 
-    // TO Inject  WebSocket presence service here later to get live active connections!
-    //@Autowired
-    // private PresenceService presenceService;
+    @Autowired
+    private PlatformMetricsService platformMetricsService;
 
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getPlatformStats() {
@@ -40,8 +40,8 @@ public class AdminController {
             stats.put("totalMentees", totalMentees);
 
             // 2. Live WebSocket Metrics (Mocked for now)
-            stats.put("activeWebSockets", 42); // Example static number
-            stats.put("liveEncryptedTunnels", 12); // Example static number
+            stats.put("activeWebSockets", platformMetricsService.getActiveWebSockets()); // Example static number
+            stats.put("liveEncryptedTunnels", platformMetricsService.getActiveEncryptedTunnels()); // Example static number
             stats.put("serverStatus", "OPERATIONAL");
 
             return ResponseEntity.ok(stats);

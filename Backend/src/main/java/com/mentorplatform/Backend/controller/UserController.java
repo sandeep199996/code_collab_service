@@ -12,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import java.security.Principal;
+import java.util.Map;
 
 import javax.management.relation.Relation;
 
@@ -86,6 +88,34 @@ import javax.management.relation.Relation;
             System.err.println("Search crash: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
+        }
+    }
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteMyAccount(Principal principal) {
+        try {            // 1. IDENTIFY THE USER
+            // The 'Principal' object is automatically injected by Spring Security.
+            // to reads the email directly from the validated JWT, impossible to forge.
+            String email = principal.getName();
+
+            // 2. FETCH THE USER
+            User userToDelete = userRepository.findByEmail(email);
+
+            if (userToDelete == null) {
+                return ResponseEntity.status(404).body(Map.of("error", "User footprint not found."));
+            }
+
+            // 3. DELETE ASSOCIATED DATA
+            //  deleted  here first before deleting the user object to avoid SQL foreign key errors!
+            // snippetRepository.deleteAllByUser(userToDelete);
+
+            // 4. THE NUCLEAR OPTION
+            userRepository.delete(userToDelete);
+
+            // 5. CONFIRMATION
+            return ResponseEntity.ok(Map.of("message", "User " + email + " and all associated data have been permanently erased."));
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to wipe data: " + e.getMessage()));
         }
     }
 }
