@@ -5,7 +5,7 @@ import com.mentorplatform.Backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +19,9 @@ public class AdminController {
 
     @Autowired
     private PlatformMetricsService platformMetricsService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getPlatformStats() {
@@ -52,4 +55,5 @@ public class AdminController {
             return ResponseEntity.internalServerError().body(stats);
         }
     }
+
 }

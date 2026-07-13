@@ -8,13 +8,16 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Controller
+@RestController
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"})
 public class PresenceController {
 
     private final SimpMessagingTemplate messagingTemplate;
@@ -29,7 +32,11 @@ public class PresenceController {
         this.messagingTemplate = messagingTemplate;
         this.metricsService = metricsService;
     }
-
+    //TO Allow Admin/Users to fetch the true state on load without relying solely on WebSockets
+    @GetMapping("/api/presence/all")
+    public Map<String, String> getAllStatuses() {
+        return userStatuses;
+    }
     // 1. When a React frontend connects, it shouts "I am here!"
     @MessageMapping("/presence.announce")
     public void announcePresence(@Payload String email, SimpMessageHeaderAccessor headerAccessor) {
