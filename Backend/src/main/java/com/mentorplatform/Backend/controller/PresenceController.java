@@ -32,6 +32,7 @@ public class PresenceController {
         this.messagingTemplate = messagingTemplate;
         this.metricsService = metricsService;
     }
+    //TO Allow Admin/Users to fetch the true state on load without relying solely on WebSockets
     @GetMapping("/api/presence/all")
     public Map<String, String> getAllStatuses() {
         return userStatuses;
@@ -50,7 +51,7 @@ public class PresenceController {
         messagingTemplate.convertAndSend("/topic/presence", userStatuses);
     }
 
-
+    // 2. The "Ghost" Catcher: Automatically triggers if the browser tab is closed
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
