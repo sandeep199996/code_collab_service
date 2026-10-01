@@ -19,7 +19,7 @@ public class CompilerController {
     public ResponseEntity<?> runDockerCode(@RequestBody Map<String, String> request) {
         String code = request.get("code");
         String language = request.getOrDefault("language", "java");
-        Path tempDir = null; // Declare up here so we can clean it up in the 'finally' block
+        Path tempDir = null;
 
         try {
             tempDir = Files.createTempDirectory("docker-sandbox");
@@ -83,7 +83,7 @@ public class CompilerController {
             e.printStackTrace();
             return ResponseEntity.ok(Map.of("output", "Backend Orchestration Error: " + e.getMessage()));
         } finally {
-            // ALWAYS run this, even if the code crashes halfway through!
+
             if (tempDir != null) {
                 cleanUpSandbox(tempDir);
             }
@@ -97,10 +97,10 @@ public class CompilerController {
             File[] files = dir.listFiles();
             if (files != null) {
                 for (File file : files) {
-                    file.delete(); // This safely deletes Main.java AND Main.class!
+                    file.delete();
                 }
             }
-            dir.delete(); // Now the empty folder can be safely deleted
+            dir.delete();
         }
     }
 }

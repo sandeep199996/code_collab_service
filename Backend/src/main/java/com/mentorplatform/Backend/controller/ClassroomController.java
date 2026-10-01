@@ -20,7 +20,7 @@ public class ClassroomController {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
-    // To Store active rooms
+
     private final Map<String, Map<String, Object>> activeClassrooms = new ConcurrentHashMap<>();
 
     //  Only an ADMIN can launch a classroom

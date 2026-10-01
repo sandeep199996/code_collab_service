@@ -109,6 +109,12 @@ public ChatMessage handleVideoSignal(@Payload ChatMessage signal) {
     public ResponseEntity<Map<String, Long>> getUnreadMap(Principal principal) {
         return ResponseEntity.ok(messageService.getUnreadCountsPerSender(principal.getName()));
     }
+    @MessageMapping("/whiteboard.sendPrivate/{roomId:.+}")
+    public void handleWhiteboardSync(@DestinationVariable String roomId, @Payload String drawData) {
+        // Receives the stroke from User A and broadcasts it to the room's whiteboard topic for User B
+        messagingTemplate.convertAndSend("/topic/session/" + roomId + "/whiteboard", drawData);
+    }
+
 }
 
 
